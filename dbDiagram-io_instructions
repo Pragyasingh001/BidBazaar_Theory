@@ -1,0 +1,185 @@
+Table User {
+  UserID int [pk]
+  Name varchar [not null]
+  Email varchar [not null, unique]
+  Phone varchar
+  PasswordHash varchar [not null]
+  Address varchar
+  isBlocked boolean
+}
+
+
+Table ProductConfiguration {
+  ConfigurationID int [pk]
+  Created timestamp
+  ProductType varchar [not null]
+  Product varchar [not null]
+}
+
+
+Table Specification {
+  SpecificationID int [pk]
+  SpecificationName varchar [not null, unique]
+}
+
+
+Table ProductConfigurationSpecification {
+  ConfigurationID int [not null]
+  SpecificationID int [not null]
+
+  indexes {
+    (ConfigurationID, SpecificationID) [pk]
+  }
+}
+
+
+Table ProductDetails {
+  ProductID int [pk]
+  ConfigurationID int [not null]
+  Status varchar
+}
+
+
+Table ProductSpecificationValue {
+  ProductID int [not null]
+  SpecificationID int [not null]
+  SpecificationValue varchar
+
+  indexes {
+    (ProductID, SpecificationID) [pk]
+  }
+}
+
+
+Table ProductInventory {
+  ProductID int [pk]
+  PickupAddress varchar
+  PickupDateTime timestamp
+  DeliveryAddress varchar
+  DeliveryDate timestamp
+  Status varchar
+}
+
+
+Table Auction {
+  AuctionID int [pk]
+  ProductID int [not null]
+  SellerID int [not null]
+
+  AuctionStartTime timestamp [not null]
+  AuctionEndTime timestamp [not null]
+
+  AuctionStatus varchar
+  AuctionType varchar
+  SnippingFlag boolean
+  AuctionBasePrice decimal
+  NegotiationEnabled boolean
+}
+
+
+Table AutoBid {
+  AutoBidID int [pk]
+  AuctionID int [not null]
+  UserID int [not null]
+
+  StartingBid decimal
+  MaxBid decimal
+  StepRate decimal
+}
+
+
+Table Bid {
+  BidID int [pk]
+  AuctionID int [not null]
+  UserID int [not null]
+
+  AutoBidID int
+
+  BidTimestamp timestamp [not null]
+  BidAmount decimal [not null]
+
+  isWinningBid boolean
+  WinTimestamp timestamp
+}
+
+
+Table Invoice {
+  InvoiceID int [pk]
+
+  BuyerID int [not null]
+  SellerID int [not null]
+  ProductID int [not null]
+
+  ReceiptID int
+  CreatedTimestamp timestamp
+
+  SellerAmount decimal
+  ServiceRate decimal
+  FinalSellerPayout decimal
+  BuyerPayout decimal
+
+  InvoiceStatus varchar
+}
+
+
+/* =========================
+   RELATIONSHIPS
+   ========================= */
+
+
+/* Configuration -> actual products */
+Ref: ProductDetails.ConfigurationID > ProductConfiguration.ConfigurationID
+
+
+/* Configuration <-> Specifications */
+Ref: ProductConfigurationSpecification.ConfigurationID > ProductConfiguration.ConfigurationID
+Ref: ProductConfigurationSpecification.SpecificationID > Specification.SpecificationID
+
+
+/* Actual product specification values */
+Ref: ProductSpecificationValue.ProductID > ProductDetails.ProductID
+Ref: ProductSpecificationValue.SpecificationID > Specification.SpecificationID
+
+
+/* Product -> Inventory : 1 to 1 */
+Ref: ProductInventory.ProductID - ProductDetails.ProductID
+
+
+/* Seller -> Auctions : 1 to many */
+Ref: Auction.SellerID > User.UserID
+
+
+/* Product -> Auctions : 1 to many */
+Ref: Auction.ProductID > ProductDetails.ProductID
+
+
+/* Auction -> Bids : 1 to many */
+Ref: Bid.AuctionID > Auction.AuctionID
+
+
+/* User -> Bids : 1 to many */
+Ref: Bid.UserID > User.UserID
+
+
+/* User -> AutoBid rules : 1 to many */
+Ref: AutoBid.UserID > User.UserID
+
+
+/* Auction -> AutoBid rules : 1 to many */
+Ref: AutoBid.AuctionID > Auction.AuctionID
+
+
+/* One AutoBid rule can generate multiple bids */
+Ref: Bid.AutoBidID > AutoBid.AutoBidID
+
+
+/* Invoice -> Buyer */
+Ref: Invoice.BuyerID > User.UserID
+
+
+/* Invoice -> Seller */
+Ref: Invoice.SellerID > User.UserID
+
+
+/* Invoice -> Product */
+Ref: Invoice.ProductID > ProductDetails.ProductID
